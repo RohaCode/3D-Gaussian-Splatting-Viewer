@@ -1,4 +1,4 @@
-# 🌌 Panorama: Premium 3D Gaussian Splatting Viewer
+# 🌌 Panorama: 3D Gaussian Splatting Viewer
 
 Интерактивный, высокопроизводительный веб-просмотрщик файлов **3D Gaussian Splatting** (`.splat` и `.spz`), оптимизированный для мгновенной загрузки, нулевой серверной нагрузки и работы на **GitHub Pages**.
 
