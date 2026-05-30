@@ -1,0 +1,19 @@
+{
+  "name": "panorama-splat-viewer",
+  "version": "1.0.0",
+  "description": "Premium 3D Gaussian Splatting Room Viewer optimized for GitHub Pages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "3dgs",
+    "gaussian-splatting",
+    "panorama",
+    "webgl",
+    "threejs",
+    "gsplat"
+  ],
+  "author": "Antigravity & User",
+  "license": "MIT"
+}

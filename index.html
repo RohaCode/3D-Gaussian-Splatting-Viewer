@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Best Practices -->
+    <title>3D Gaussian Splatting Room Viewer | Panorama</title>
+    <meta name="description" content="Интерактивный высокопроизводительный 3D-просмотрщик комнат на базе технологии Gaussian Splatting.">
+    <meta name="keywords" content="3DGS, Gaussian Splatting, 3D room, Panorama, WebGL, WebGPU, COLMAP">
+    <meta name="author" content="Antigravity & User">
+    
+    <!-- Google Fonts for Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <!-- External Style Sheet -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Premium Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <canvas id="canvas"></canvas>
+
+    <!-- WELCOME / FILE SELECTOR OVERLAY -->
+    <div id="welcome-screen">
+        <div class="welcome-card">
+            <div class="welcome-title-group">
+                <div class="logo-icon" style="margin: 0 auto; width: 52px; height: 52px; font-size: 24px; border-radius: 14px;">3D</div>
+                <h1>Panorama Splat-Viewer</h1>
+                <p>Просматривайте файлы Гауссовых Сплатов (.splat или .spz) в фотореалистичном 3D-качестве с круговым обзором</p>
+            </div>
+
+            <!-- Drag & Drop / Selection Area -->
+            <div class="drag-zone" id="welcome-drag-zone">
+                <div class="drag-icon">📁</div>
+                <div class="drag-text">
+                    Перетащите файл сюда или нажмите<br>
+                    <span style="color: var(--accent-color); font-weight: 600;">Выбрать файл на компьютере</span>
+                </div>
+            </div>
+            <input type="file" id="welcome-file-input" accept=".splat,.spz" style="position: absolute; width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; z-index: -1;" />
+
+
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loader">
+        <div class="spinner-box">
+            <div class="spinner-outer"></div>
+            <div class="spinner-inner"></div>
+            <div class="spinner-text" id="loader-percent">0%</div>
+        </div>
+        <div class="loading-details">
+            <h2 style="font-family: 'Outfit'; font-weight: 600; margin-bottom: 6px;">Загрузка 3D-сцены...</h2>
+            <p id="loader-status" style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">Получение файла...</p>
+            <div class="progress-container">
+                <div class="progress-bar" id="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTROL PANEL -->
+    <div class="ui-panel">
+        <!-- Logo & Header -->
+        <div class="header">
+            <div class="logo-icon">3D</div>
+            <div class="title-group">
+                <h1>Panorama Splat-Viewer</h1>
+                <p>Высокоточный просмотрщик Гауссовых Сплатов</p>
+            </div>
+            <button id="btn-hide-panel" class="btn-hide" title="Скрыть панель">✕</button>
+        </div>
+
+        <!-- 1. File Loader -->
+        <div class="card">
+            <div class="card-title">Выбор файла</div>
+            <div class="file-input-wrapper">
+                <button class="btn btn-action" style="width: 100%;">📁 Загрузить другой файл</button>
+                <input type="file" id="file-loader-input" accept=".splat,.spz" />
+            </div>
+        </div>
+
+        <!-- 2. Scene Info -->
+        <div class="card">
+            <div class="card-title">Информация о сцене</div>
+            <div class="info-list">
+                <div class="info-row">
+                    <span class="info-label">Файл:</span>
+                    <span class="info-value" id="info-file">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Кол-во сплатов:</span>
+                    <span class="info-value" id="info-count">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Размер файла:</span>
+                    <span class="info-value" id="info-size">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Real-time Splat Alignment Tool -->
+        <div class="card">
+            <div class="card-title">Выравнивание комнаты (Смещение)</div>
+            
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Высота (Ось Y)</span>
+                    <span class="value" id="y-val">0.0</span>
+                </div>
+                <input type="range" id="input-y" min="-5.0" max="5.0" step="0.05" value="0.0">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Поворот X (Угол наклона)</span>
+                    <span class="value" id="rx-val">0°</span>
+                </div>
+                <input type="range" id="input-rx" min="-180" max="180" step="1" value="0">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Поворот Y (Азимут)</span>
+                    <span class="value" id="ry-val">0°</span>
+                </div>
+                <input type="range" id="input-ry" min="-180" max="180" step="1" value="0">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Поворот Z (Крен)</span>
+                    <span class="value" id="rz-val">0°</span>
+                </div>
+                <input type="range" id="input-rz" min="-180" max="180" step="1" value="0">
+            </div>
+
+            <button id="btn-copy-code" class="btn btn-action" style="margin-top: 6px;">📋 Скопировать параметры выравнивания</button>
+        </div>
+
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast">Параметры скопированы в буфер обмена!</div>
+
+    <!-- Floating Open Panel Button -->
+    <button id="btn-show-panel" class="btn-show-panel" title="Показать настройки">⚙️ Настройки</button>
+
+    <!-- External Module Script -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
